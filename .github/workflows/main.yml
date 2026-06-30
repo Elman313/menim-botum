@@ -1,10 +1,9 @@
 name: Kripto Bot Taymeri
+
 on:
   schedule:
-    # 1. Bakı vaxtı ilə səhər 10:00 (UTC 06:00)
-    - cron: '0 6 * * *'
-    # 2. Bakı vaxtı ilə axşam 18:00 (UTC 14:00)
-    - cron: '0 14 * * *'
+    - cron: '0 6 * * *'      # Bakı vaxtı ilə 10:00
+    - cron: '0 14 * * *'     # Bakı vaxtı ilə 18:00
   workflow_dispatch:
 
 jobs:
@@ -13,11 +12,14 @@ jobs:
     steps:
       - name: Kodu yoxla
         uses: actions/checkout@v3
+
       - name: Python-u quraşdır
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
+
       - name: Kitabxanaları yüklə
-        run: pip install requests pandas ta
+        run: pip install requests
+
       - name: Botu işə sal
         run: python bot.py

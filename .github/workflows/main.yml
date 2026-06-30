@@ -2,8 +2,6 @@ name: Kripto Bot Taymeri
 
 on:
   schedule:
-    # Bakı vaxtı ilə hər saat başı (Səhər 08:00 - Axşam 23:00 arası)
-    # UTC ilə saat 04:00-dan 19:00-a qədər hər saat işləyir
     - cron: '0 4-19 * * *'
   workflow_dispatch:
 
@@ -23,4 +21,7 @@ jobs:
         run: pip install requests
 
       - name: Botu işə sal
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python bot.py

@@ -1,9 +1,8 @@
-import os
 import requests
 
-# Məlumatları GitHub Secrets-dən avtomatik oxuyuruq
-TOKEN = os.environ.get("TELEGRAM_TOKEN")
-CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+# Sənin Telegram məlumatların birbaşa kodun daxilinə yazıldı
+TOKEN = "8884012328:AAEZiHEPUI5LpyXARCPUSQD-fq1_cIjTgM0"
+CHAT_ID = "8570681347"
 
 def get_rsi(symbol):
     try:
@@ -31,7 +30,6 @@ def get_rsi(symbol):
         rsi = 100 - (100 / (1 + rs))
         return round(rsi, 2)
     except Exception as e:
-        print(f"Xəta ({symbol} RSI):", e)
         return None
 
 def get_live_price(symbol):
@@ -40,21 +38,15 @@ def get_live_price(symbol):
         response = requests.get(url).json()
         return float(response['price'])
     except Exception as e:
-        print(f"Xəta ({symbol} Qiymət):", e)
         return None
 
 def send_telegram_message(message):
-    if not TOKEN or not CHAT_ID:
-        print("XƏTA: GitHub Secrets bölməsində TELEGRAM_TOKEN və ya TELEGRAM_CHAT_ID tapılmadı!")
-        return
-        
     telegram_url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
     try:
-        response = requests.post(telegram_url, json=payload)
-        print(f"Telegram Server Cavabı: {response.text}")
+        requests.post(telegram_url, json=payload)
     except Exception as e:
-        print("Telegram xətası:", e)
+        print("Xəta:", e)
 
 def main():
     coins = {"BTCUSDT": "Bitcoin", "ETHUSDT": "Ethereum", "SOLUSDT": "Solana"}
@@ -64,13 +56,11 @@ def main():
         rsi = get_rsi(symbol)
         price = get_live_price(symbol)
         
-        print(f"Yoxlanılır: {name} | Cari RSI: {rsi} | Qiymət: {price}")
-        
         if rsi is not None and price is not None:
             clean_symbol = symbol.replace('USDT', '')
             
-            # Test üçün limiti 50 saxlayırıq ki mütləq mesaj gəlsin
-            if rsi <= 50:
+            # Test üçün limit 55-dir, hər şey dərhal işləsin deyə
+            if rsi <= 55:
                 sl = round(price * 0.98, 2)
                 tp = round(price * 1.04, 2)
                 
@@ -99,8 +89,6 @@ def main():
     if signals:
         final_message = "🚨 *YENİ ƏMƏLİYYAT FÜRSƏTİ TAPILDI!*\n\n" + "\n\n---\n\n".join(signals)
         send_telegram_message(final_message)
-    else:
-        print("Səttiz rejim: Limitlər ödənmədi.")
 
 if __name__ == "__main__":
     main()

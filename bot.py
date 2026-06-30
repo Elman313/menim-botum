@@ -1,10 +1,9 @@
+import os
 import requests
 
-# --------------------------------------------------
-# BURA ÖZ TELEGRAM BOT MƏLUMATLARINI YAZIRSAN:
-TOKEN = "8884012328:AAEZiHEPUI5LpyXARCPUSQD-fq1_cIjTgM0"
-CHAT_ID = "8570681347"
-# --------------------------------------------------
+# Məlumatları GitHub Secrets-dən avtomatik oxuyuruq
+TOKEN = os.environ.get("TELEGRAM_TOKEN")
+CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 def get_rsi(symbol):
     try:
@@ -45,9 +44,12 @@ def get_live_price(symbol):
         return None
 
 def send_telegram_message(message):
+    if not TOKEN or not CHAT_ID:
+        print("XƏTA: GitHub Secrets bölməsində TELEGRAM_TOKEN və ya TELEGRAM_CHAT_ID tapılmadı!")
+        return
+        
     telegram_url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
-    print(f"Telegrama göndərilən data: {payload}")
     try:
         response = requests.post(telegram_url, json=payload)
         print(f"Telegram Server Cavabı: {response.text}")
@@ -67,7 +69,7 @@ def main():
         if rsi is not None and price is not None:
             clean_symbol = symbol.replace('USDT', '')
             
-            # TEST ÜÇÜN LİMİTİ MÜVƏQQƏTİ OLARAQ 50 EDİRİK (SIQNAL HƏR AN TETİKLƏNSİN)
+            # Test üçün limiti 50 saxlayırıq ki mütləq mesaj gəlsin
             if rsi <= 50:
                 sl = round(price * 0.98, 2)
                 tp = round(price * 1.04, 2)
@@ -98,7 +100,7 @@ def main():
         final_message = "🚨 *YENİ ƏMƏLİYYAT FÜRSƏTİ TAPILDI!*\n\n" + "\n\n---\n\n".join(signals)
         send_telegram_message(final_message)
     else:
-        print("Səssiz Rejim: Limitlər ödənmədi, mesaj göndərilmədi.")
+        print("Səttiz rejim: Limitlər ödənmədi.")
 
 if __name__ == "__main__":
     main()

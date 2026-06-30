@@ -2,8 +2,9 @@ name: Kripto Bot Taymeri
 
 on:
   schedule:
-    - cron: '0 6 * * *'      # Bakı vaxtı ilə 10:00
-    - cron: '0 14 * * *'     # Bakı vaxtı ilə 18:00
+    # Bakı vaxtı ilə hər saat başı (Səhər 08:00 - Axşam 23:00 arası)
+    # UTC ilə saat 04:00-dan 19:00-a qədər hər saat işləyir
+    - cron: '0 4-19 * * *'
   workflow_dispatch:
 
 jobs:

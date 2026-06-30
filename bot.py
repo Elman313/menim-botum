@@ -68,7 +68,7 @@ def main():
             clean_symbol = symbol.replace('USDT', '')
             
             # 🟢 ALIŞ (BUY) FÜRSƏTİ (RSI 35 və daha aşağı düşəndə)
-            if rsi <= 35:
+            if rsi <= 40:
                 sl = round(price * 0.98, 4 if price < 10 else 2)  # 2% aşağı stop loss
                 tp = round(price * 1.04, 4 if price < 10 else 2)  # 4% yuxarı take profit
                 

@@ -1,18 +1,18 @@
 import requests
 
-# Bura öz şəxsi Telegram bot məlumatlarını yazırsan
+# --------------------------------------------------
+# BURA ÖZ TELEGRAM BOT MƏLUMATLARINI YAZIRSAN:
 TOKEN = "8884012328:AAEZiHEPUI5LpyXARCPUSQD-fq1_cIjTgM0"
 CHAT_ID = "8570681347"
+# --------------------------------------------------
 
 def get_rsi(symbol):
     try:
         url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1h&limit=100"
         response = requests.get(url).json()
-        
         closes = [float(candle[4]) for candle in response]
         
-        gains = []
-        losses = []
+        gains, losses = [], []
         for i in range(1, len(closes)):
             diff = closes[i] - closes[i-1]
             if diff > 0:
@@ -32,7 +32,7 @@ def get_rsi(symbol):
         rsi = 100 - (100 / (1 + rs))
         return round(rsi, 2)
     except Exception as e:
-        print(f"Xəta baş verdi ({symbol} RSI):", e)
+        print(f"Xəta ({symbol} RSI):", e)
         return None
 
 def get_live_price(symbol):
@@ -41,22 +41,18 @@ def get_live_price(symbol):
         response = requests.get(url).json()
         return float(response['price'])
     except Exception as e:
-        print(f"Xəta baş verdi ({symbol} Qiymət):", e)
+        print(f"Xəta ({symbol} Qiymət):", e)
         return None
 
 def send_telegram_message(message):
     telegram_url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
-    
-    # Bura yoxlama printləri əlavə olundu:
-    print(f"--- Telegrama mesaj göndərilməyə çalışılır ---")
-    print(f"Gönderilən Data: {payload}")
-    
+    print(f"Telegrama göndərilən data: {payload}")
     try:
         response = requests.post(telegram_url, json=payload)
-        print(f"Telegram Serverinin Cavabı: {response.text}")
+        print(f"Telegram Server Cavabı: {response.text}")
     except Exception as e:
-        print("Telegram mesajı göndərilərkən xəta:", e)
+        print("Telegram xətası:", e)
 
 def main():
     coins = {"BTCUSDT": "Bitcoin", "ETHUSDT": "Ethereum", "SOLUSDT": "Solana"}
@@ -66,13 +62,13 @@ def main():
         rsi = get_rsi(symbol)
         price = get_live_price(symbol)
         
-        print(f"Yoxlanılır: {name} | Cari 1 Saatlıq RSI: {rsi} | Qiymət: {price}")
+        print(f"Yoxlanılır: {name} | Cari RSI: {rsi} | Qiymət: {price}")
         
         if rsi is not None and price is not None:
             clean_symbol = symbol.replace('USDT', '')
             
-            # TEST ÜÇÜN LİMİTİ 40 ELƏDİK
-            if rsi <= 40:
+            # TEST ÜÇÜN LİMİTİ MÜVƏQQƏTİ OLARAQ 50 EDİRİK (SIQNAL HƏR AN TETİKLƏNSİN)
+            if rsi <= 50:
                 sl = round(price * 0.98, 2)
                 tp = round(price * 1.04, 2)
                 
@@ -102,8 +98,7 @@ def main():
         final_message = "🚨 *YENİ ƏMƏLİYYAT FÜRSƏTİ TAPILDI!*\n\n" + "\n\n---\n\n".join(signals)
         send_telegram_message(final_message)
     else:
-        print("Səssiz Rejim: Şərtlər ödənmədi (RSI 40-dan kiçik deyil), mesaj göndərilmədi.")
+        print("Səssiz Rejim: Limitlər ödənmədi, mesaj göndərilmədi.")
 
 if __name__ == "__main__":
     main()
-

@@ -1,6 +1,6 @@
 import requests
 
-# Bura öz məlumatlarını yazırsan
+# Bura öz şəxsi Telegram bot məlumatlarını yazırsan
 TOKEN = "8884012328:AAEZiHEPUI5LpyXARCPUSQD-fq1_cIjTgM0"
 CHAT_ID = "8570681347"
 
@@ -34,43 +34,74 @@ def get_rsi(symbol):
         rsi = 100 - (100 / (1 + rs))
         return round(rsi, 2)
     except Exception as e:
-        print(f"Xəta baş verdi ({symbol}):", e)
+        print(f"Xəta baş verdi ({symbol} RSI):", e)
+        return None
+
+def get_live_price(symbol):
+    try:
+        # Binance-dən coin-in canlı qiymətini götürürük
+        url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
+        response = requests.get(url).json()
+        return float(response['price'])
+    except Exception as e:
+        print(f"Xəta baş verdi ({symbol} Qiymət):", e)
         return None
 
 def send_telegram_message(message):
     telegram_url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
-    requests.post(telegram_url, json=payload)
+    try:
+        requests.post(telegram_url, json=payload)
+    except Exception as e:
+        print("Telegram mesajı göndərilərkən xəta:", e)
 
 def main():
+    # Yoxlamaq istədiyimiz coinlər
     coins = {"BTCUSDT": "Bitcoin", "ETHUSDT": "Ethereum", "SOLUSDT": "Solana"}
-    report_message = "🤖 *RSI Bot Canlı Hesabatı*\n\n"
     signals = []
     
     for symbol, name in coins.items():
         rsi = get_rsi(symbol)
-        if rsi is not None:
-            # Hesabata əlavə et
-            report_message += f"📊 *{name} ({symbol.replace('USDT', '')})* -> RSI: `{rsi}`\n"
+        price = get_live_price(symbol)
+        
+        if rsi is not None and price is not None:
+            clean_symbol = symbol.replace('USDT', '')
             
-            # Siqnalları yoxla (Limitlər: 35 və 65)
+            # 🟢 ALIŞ (BUY) FÜRSƏTİ (RSI 35 və daha aşağı düşəndə)
             if rsi <= 35:
-                signals.append(f"🟢 *{name}* üçün ALTI (BUY) fürsəti! RSI çox düşüb: `{rsi}`")
+                sl = round(price * 0.98, 4 if price < 10 else 2)  # 2% aşağı stop loss
+                tp = round(price * 1.04, 4 if price < 10 else 2)  # 4% yuxarı take profit
+                
+                msg = (
+                    f"🟢 *{name} ({clean_symbol}) ALTI (BUY) FÜRSƏTİ!*\n"
+                    f"📈 RSI səviyyəsi: `{rsi}`\n"
+                    f"💵 *Giriş Qiyməti (Entry):* `{price} USDT`\n"
+                    f"🛑 *Stop Loss (SL):* `{sl} USDT`\n"
+                    f"🎯 *Take Profit (TP):* `{tp} USDT`"
+                )
+                signals.append(msg)
+                
+            # 🔴 SATIŞ (SELL / SHORT) FÜRSƏTİ (RSI 65 və daha yuxarı qalxanda)
             elif rsi >= 65:
-                signals.append(f"🔴 *{name}* üçün SATIŞ (SELL) fürsəti! RSI çox qalxıb: `{rsi}`")
-        else:
-            report_message += f"❌ *{name}* məlumatı alına bilmədi.\n"
+                sl = round(price * 1.02, 4 if price < 10 else 2)  # 2% yuxarı stop loss (Futures üçün)
+                tp = round(price * 0.96, 4 if price < 10 else 2)  # 4% aşağı take profit (Futures üçün)
+                
+                msg = (
+                    f"🔴 *{name} ({clean_symbol}) SATIŞ (SELL) FÜRSƏTİ!*\n"
+                    f"📉 RSI səviyyəsi: `{rsi}`\n"
+                    f"💵 *Giriş Qiyməti (Entry):* `{price} USDT`\n"
+                    f"🛑 *Stop Loss (SL):* `{sl} USDT`\n"
+                    f"🎯 *Take Profit (TP):* `{tp} USDT`"
+                )
+                signals.append(msg)
 
-    report_message += "\n"
-    
-    # Əgər əməliyyat siqnalı varsa, onları mesajın başına qoy
+    # Əgər hər hansı bir coində əməliyyat yeri varsa, Telegram-a göndər
     if signals:
-        final_message = "🚨 *TƏCİLİ SİQNAL VAR!*\n\n" + "\n".join(signals) + "\n\n" + report_message
+        final_message = "🚨 *YENİ ƏMƏLİYYAT FÜRSƏTİ TAPILDI!*\n\n" + "\n\n---\n\n".join(signals)
+        send_telegram_message(final_message)
     else:
-        final_message = report_message + "😴 *Vəziyyət:* Hazırda güclü siqnal yoxdur, bazar ortadadır. Səbirlə gözləyirik."
-
-    send_telegram_message(final_message)
+        # Əgər yaxşı fürsət yoxdursa, bot tamamilə səssiz qalır
+        print("Yaxşı əməliyyat yeri yoxdur, monitorinq davam edir.")
 
 if __name__ == "__main__":
     main()
-    
